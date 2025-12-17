@@ -7,7 +7,7 @@
   <description>Navigation package for Unitree Go2 simulation with Gazebo Harmonic simulation</description>
   
   <maintainer email="andrewoshei@gmail.com">Andrew O'Shei</maintainer>
-  <license>MIT</license>
+  <license>BSD-3-Clause</license>
 
   <buildtool_depend>ament_python</buildtool_depend>
 

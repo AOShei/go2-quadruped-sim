@@ -1,7 +1,9 @@
-/*
-Go2 Kinematics - Final corrected version for 3-joint legs
-Based on CHAMP kinematics, adapted for Unitree Go2
-*/
+// Originally from CHAMP (Copyright 2019-2020 Juan Miguel Jimeno)
+// Modified for Unitree Go2 by Andrew O'Shei (2024-2025)
+// Licensed under BSD-3-Clause
+//
+// Go2 Kinematics - Final corrected version for 3-joint legs
+// Based on CHAMP kinematics, adapted for Unitree Go2
 
 #ifndef KINEMATICS_H
 #define KINEMATICS_H

@@ -30,7 +30,6 @@
     <!-- leg offset from trunk center value -->
     <xacro:property name="leg_offset_x" value="0.1934"/>
     <xacro:property name="leg_offset_y" value="0.0465"/>
-    <!-- <xacro:property name="trunk_offset_z" value="0.01675"/> -->
     <xacro:property name="hip_offset" value="0.0955"/>
 
     <!-- offset of link locations (left front) -->

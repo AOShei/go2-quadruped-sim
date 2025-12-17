@@ -5,7 +5,7 @@
   <version>1.0.0</version>
   <description>Quadruped controller for Unitree Go2 simulation (adapted from CHAMP)</description>
   <maintainer email="andrewoshei@gmail.com">andrew</maintainer>
-  <license>MIT</license>
+  <license>BSD-3-Clause</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

@@ -156,7 +156,6 @@ def generate_launch_description():
         executable='quadruped_controller_node',
         name='quadruped_controller',
         output='screen',
-        #arguments=['--ros-args', '--log-level', 'DEBUG'],  # ADD THIS LINE
         parameters=[
             {'use_sim_time': use_sim_time},
             {'robot_description': robot_description},

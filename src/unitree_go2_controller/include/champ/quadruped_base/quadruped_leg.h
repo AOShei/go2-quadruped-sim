@@ -1,7 +1,9 @@
-/*
-Adapted from CHAMP for Unitree Go2 (3-joint legs)
-Corrected transformation order to match CHAMP's approach
-*/
+// Originally from CHAMP (Copyright 2019-2020 Juan Miguel Jimeno)
+// Modified for Unitree Go2 by Andrew O'Shei (2024-2025)
+// Licensed under BSD-3-Clause
+//
+// Adapted from CHAMP for Unitree Go2 (3-joint legs)
+// Corrected transformation order to match CHAMP's approach
 
 #ifndef QUADRUPED_LEG_H
 #define QUADRUPED_LEG_H

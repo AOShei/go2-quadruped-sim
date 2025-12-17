@@ -1,3 +1,8 @@
+// Copyright (c) 2019-2020, Juan Miguel Jimeno
+// All rights reserved.
+// Licensed under the BSD-3-Clause license.
+// See https://github.com/chvmp/champ for more information.
+
 #ifndef QUADRUPED_JOINT_H
 #define QUADRUPED_JOINT_H
 

@@ -1,3 +1,11 @@
+// Copyright (c) 2024-2025 Andrew O'Shei
+//
+// This software is released under the BSD-3-Clause License.
+// See LICENSE file in the root directory for full license information.
+//
+// This file is part of the Unitree Go2 ROS2 simulation project.
+// Based on CHAMP quadruped controller by Juan Miguel Jimeno.
+
 #include "quadruped_controller.h"
 #include <algorithm>
 #include <tf2/LinearMath/Quaternion.h>
@@ -96,17 +104,6 @@ QuadrupedController::QuadrupedController()
     std::string urdf_xml;
     this->declare_parameter("robot_description", std::string());
 
-    RCLCPP_INFO(this->get_logger(), "=== DEBUG: Checking for parameters ===");
-    std::vector<std::string> param_names = {"links_map.left_front", "links_map.right_front", 
-                                             "links_map.left_hind", "links_map.right_hind"};
-    for (const auto& name : param_names) {
-        if (this->has_parameter(name)) {
-            RCLCPP_INFO(this->get_logger(), "Found parameter: %s", name.c_str());
-        } else {
-            RCLCPP_ERROR(this->get_logger(), "MISSING parameter: %s", name.c_str());
-        }
-    }
-
     if (!this->get_parameter("robot_description", urdf_xml) || urdf_xml.empty())
     {
         RCLCPP_FATAL(this->get_logger(), "FATAL: 'robot_description' parameter not found or empty.");
@@ -119,37 +116,18 @@ QuadrupedController::QuadrupedController()
     try
     {
         champ::URDF::loadFromString(
-            quadruped_, 
+            quadruped_,
             this->get_node_parameters_interface(),
             urdf_xml
         );
-        RCLCPP_INFO(this->get_logger(), "Successfully loaded kinematics from URDF");
-        
-        RCLCPP_INFO(this->get_logger(), "=== Final leg geometry check ===");
-        for(int leg = 0; leg < 4; leg++)
-        {
-            RCLCPP_INFO(this->get_logger(), "Leg %d:", leg);
-            RCLCPP_INFO(this->get_logger(), "  hip: (%.4f, %.4f, %.4f)", 
-                        quadruped_.legs[leg]->hip.x(),
-                        quadruped_.legs[leg]->hip.y(),
-                        quadruped_.legs[leg]->hip.z());
-            RCLCPP_INFO(this->get_logger(), "  thigh: (%.4f, %.4f, %.4f)", 
-                        quadruped_.legs[leg]->thigh.x(),
-                        quadruped_.legs[leg]->thigh.y(),
-                        quadruped_.legs[leg]->thigh.z());
-            RCLCPP_INFO(this->get_logger(), "  calf: (%.4f, %.4f, %.4f)", 
-                        quadruped_.legs[leg]->calf.x(),
-                        quadruped_.legs[leg]->calf.y(),
-                        quadruped_.legs[leg]->calf.z());
-        }
     }
     catch (const std::exception& e)
     {
         RCLCPP_FATAL(this->get_logger(), "FATAL: URDF loading failed: %s", e.what());
         throw;
     }
-    
-    RCLCPP_INFO(this->get_logger(), "Setting foot offsets...");
+
+    // Set foot offsets
     quadruped_.lf.foot_offset_x = 0.0f;
     quadruped_.lf.foot_offset_y = 0.0f;
     quadruped_.lf.foot_offset_z = -0.213f;
@@ -165,22 +143,7 @@ QuadrupedController::QuadrupedController()
     quadruped_.rh.foot_offset_x = 0.0f;
     quadruped_.rh.foot_offset_y = 0.0f;
     quadruped_.rh.foot_offset_z = -0.213f;
-    
-    RCLCPP_INFO(this->get_logger(), "=== Checking zero_stance positions ===");
-    for(int i = 0; i < 4; i++)
-    {
-        auto zero_pos = quadruped_.legs[i]->zero_stance();
-        RCLCPP_INFO(this->get_logger(), "Leg %d zero_stance: (%.4f, %.4f, %.4f)", 
-            i, zero_pos.X(), zero_pos.Y(), zero_pos.Z());
-    }
-    
-    RCLCPP_INFO(this->get_logger(), "=== Knee directions ===");
-    for(int i = 0; i < 4; i++)
-    {
-        RCLCPP_INFO(this->get_logger(), "Leg %d knee_direction: %d", 
-            i, quadruped_.legs[i]->knee_direction());
-    }
-    
+
     // 4. Initialize controllers AFTER URDF loading
     body_controller_ = new champ::BodyController(quadruped_);
     leg_controller_ = new champ::LegController(quadruped_);
@@ -200,23 +163,12 @@ QuadrupedController::QuadrupedController()
     for(int i = 0; i < 4; i++)
     {
         quadruped_.legs[i]->joints(initial_joints[i*3], initial_joints[i*3+1], initial_joints[i*3+2]);
-        
-        // VERIFY angles were set
-        float hip_check = quadruped_.legs[i]->hip.theta();
-        float thigh_check = quadruped_.legs[i]->thigh.theta();
-        float calf_check = quadruped_.legs[i]->calf.theta();
-        RCLCPP_INFO(this->get_logger(), "Leg %d angles AFTER setting: hip=%.4f, thigh=%.4f, calf=%.4f",
-                    i, hip_check, thigh_check, calf_check);
     }
-    
-    // Now calculate foot positions using forward kinematics from actual joint angles
+
+    // Calculate initial foot positions using forward kinematics
     for(int i = 0; i < 4; i++)
     {
         target_foot_positions_[i] = quadruped_.legs[i]->foot_from_base();
-        RCLCPP_INFO(this->get_logger(), "Initial foot %d position: (%.4f, %.4f, %.4f)", 
-                    i, target_foot_positions_[i].X(), 
-                    target_foot_positions_[i].Y(), 
-                    target_foot_positions_[i].Z());
     }
 
     // Initialize joint positions array
@@ -361,23 +313,9 @@ void QuadrupedController::jointStateCallback(const sensor_msgs::msg::JointState:
         {
             startup_foot_positions_[i] = quadruped_.legs[i]->foot_from_base();
             target_foot_positions_[i] = startup_foot_positions_[i];
-            
-            RCLCPP_INFO(this->get_logger(), "Spawn foot %d at: (%.3f, %.3f, %.3f)", 
-                i,
-                startup_foot_positions_[i].X(),
-                startup_foot_positions_[i].Y(),
-                startup_foot_positions_[i].Z());
         }
-        
-        // Log what zero_stance would be
-        for(int i = 0; i < 4; i++)
-        {
-            auto zero_pos = quadruped_.legs[i]->zero_stance();
-            RCLCPP_INFO(this->get_logger(), "Zero stance foot %d at: (%.3f, %.3f, %.3f)",
-                i, zero_pos.X(), zero_pos.Y(), zero_pos.Z());
-        }
-        
-        RCLCPP_INFO(this->get_logger(), "Joint states received - starting smooth transition to stance");
+
+        RCLCPP_INFO(this->get_logger(), "Joint states received - starting transition to stance");
         joint_states_received_ = true;
     }
 }
@@ -471,21 +409,15 @@ void QuadrupedController::controlLoop()
                     
                     was_moving = true;
                 }
-                
-                // --- START NEW FIX ---
-                
-                // Create a temporary pose for walking.
-                // We need the body's X, Y, Z position from req_pose_...
-                champ::Pose walking_pose = req_pose_; 
-                
-                // ...but we MUST zero out the orientation.
-                // This stops the body_controller from fighting the
-                // natural sway (roll/pitch) of the walking gait.
+
+                // Clean orientation from pose to use only translation for walking.
+                // Body orientation is handled separately by the body controller.
+                champ::Pose walking_pose = req_pose_;
                 walking_pose.orientation.roll = 0.0f;
                 walking_pose.orientation.pitch = 0.0f;
-                walking_pose.orientation.yaw = 0.0f; // Yaw is handled by the leg_controller
+                walking_pose.orientation.yaw = 0.0f;
 
-                // Apply body pose to maintain height/translation using the CLEANED pose
+                // Apply body pose to maintain height/translation
                 body_controller_->poseCommand(target_foot_positions_, walking_pose);
                 
                 // Apply gait trajectory - this MODIFIES target_foot_positions_ over time
@@ -538,42 +470,13 @@ void QuadrupedController::controlLoop()
                 RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
                     "Invalid joint %d: %.4f - skipping command", i, target_joints[i]);
                 
-                // Log the foot positions that caused the IK failure
-                if(loop_count % 50 == 0)
-                {
-                    for(int leg = 0; leg < 4; leg++)
-                    {
-                        RCLCPP_ERROR(this->get_logger(), "Foot %d target: (%.3f, %.3f, %.3f)",
-                            leg,
-                            target_foot_positions_[leg].X(),
-                            target_foot_positions_[leg].Y(),
-                            target_foot_positions_[leg].Z());
-                    }
-                }
-                
-                valid = false;
+                    valid = false;
                 break;
             }
         }
 
         if(valid)
         {
-            // Log first few joint commands for verification
-            if(loop_count < 3 || (loop_count == STARTUP_BLEND_CYCLES) || (loop_count == STARTUP_BLEND_CYCLES + 1))
-            {
-                RCLCPP_INFO(this->get_logger(), 
-                    "Loop %d - Commanded joints: FL=(%.2f,%.2f,%.2f) FR=(%.2f,%.2f,%.2f)", 
-                    loop_count,
-                    target_joints[0], target_joints[1], target_joints[2],
-                    target_joints[3], target_joints[4], target_joints[5]);
-                    
-                RCLCPP_INFO(this->get_logger(),
-                    "Loop %d - Actual joints:    FL=(%.2f,%.2f,%.2f) FR=(%.2f,%.2f,%.2f)",
-                    loop_count,
-                    current_joint_positions_[0], current_joint_positions_[1], current_joint_positions_[2],
-                    current_joint_positions_[3], current_joint_positions_[4], current_joint_positions_[5]);
-            }
-            
             publishJoints(target_joints);
         }
         else
@@ -597,8 +500,7 @@ void QuadrupedController::publishJoints(float joints[12])
 {
     auto joint_msg = trajectory_msgs::msg::JointTrajectory();
     // Don't set header stamp - let controller use its own time for immediate execution
-    // joint_msg.header.stamp = this->now();
-    
+
     // Joint names (matching Go2 URDF)
     joint_msg.joint_names = {
         "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",

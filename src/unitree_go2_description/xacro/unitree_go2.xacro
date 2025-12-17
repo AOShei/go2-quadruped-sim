@@ -2,6 +2,7 @@
 
 <robot name="go2" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
+    <!-- DEBUG mode: Set to 'true' to fix robot to world frame for testing kinematics without physics simulation -->
     <xacro:arg name="DEBUG" default="false"/>
 
     <xacro:include filename="$(find unitree_go2_description)/xacro/constants.xacro"/>
@@ -10,7 +11,7 @@
     <xacro:include filename="$(find unitree_go2_description)/xacro/gazebo.xacro"/>
     <xacro:include filename="$(find unitree_go2_description)/xacro/lidar.xacro"/>
 
-    <!-- Debug mode will fix the robot to the world -->
+    <!-- When DEBUG is true, fix the robot to world frame for kinematic testing -->
     <xacro:if value="$(arg DEBUG)">
         <link name="world"/>
         <joint name="base_static_joint" type="fixed">
