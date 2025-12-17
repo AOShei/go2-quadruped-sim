@@ -44,6 +44,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'body_pose_demo = unitree_go2_nav2.body_pose_demo:main',
         ],
     },
 )

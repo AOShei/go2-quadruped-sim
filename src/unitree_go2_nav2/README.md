@@ -36,6 +36,18 @@ This starts:
 3. Click and drag on the map to set goal pose
 4. Robot will autonomously navigate to the goal
 
+### Run Body Pose Demo
+
+To showcase the quadruped controller's stability and body pose control:
+
+```bash
+# In a new terminal (with simulation already running)
+source install/setup.bash
+ros2 run unitree_go2_nav2 body_pose_demo
+```
+
+This automated demo will cycle through various body poses including height adjustments, pitch/roll tilts, and combined movements. Watch the robot adapt in real-time!
+
 ## Launch Arguments
 
 ```bash
@@ -56,19 +68,6 @@ ros2 launch unitree_go2_nav2 simulation.launch.py [arguments]
 | `autostart` | `true` | Auto-start Nav2 lifecycle nodes |
 
 ## Usage Examples
-
-### Different Worlds
-
-```bash
-# Playground world (open area)
-ros2 launch unitree_go2_nav2 simulation.launch.py world:=playground
-
-# Outdoor terrain
-ros2 launch unitree_go2_nav2 simulation.launch.py world:=outdoor
-
-# Default simple world
-ros2 launch unitree_go2_nav2 simulation.launch.py world:=default
-```
 
 ### Headless Mode (No RViz)
 
@@ -103,9 +102,6 @@ Located in `worlds/` directory:
 | World | Description | Best For |
 |-------|-------------|----------|
 | `test_arena` | Indoor environment with obstacles | Navigation testing, SLAM |
-| `playground` | Open outdoor area | Speed testing, simple navigation |
-| `outdoor` | Varied terrain | Robust navigation testing |
-| `default` | Simple flat environment | Basic testing, debugging |
 
 ## SLAM Workflow
 

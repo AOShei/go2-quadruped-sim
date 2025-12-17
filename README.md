@@ -1,11 +1,18 @@
-# Unitree Go2 ROS 2 Jazzy Simulation
+# go2-quadruped-sim
 
-A complete ROS 2 simulation package for the Unitree Go2 quadruped robot, featuring autonomous navigation, SLAM mapping, and a CHAMP-based locomotion controller. Designed for educational use and as a foundation for robotics research and development.
+A complete ROS 2 Jazzy simulation package for the Unitree Go2 quadruped robot, featuring autonomous navigation, SLAM mapping, and a CHAMP-based locomotion controller. Designed for educational use and as a foundation for robotics research and development.
+
+![Gazebo Simulation](assets/unitree_go2_gazebo_harmonic.png)
+*Unitree Go2 in Gazebo Harmonic simulation environment*
+
+![RViz Visualization](assets/unitree_go2_rviz.png)
+*RViz showing robot model, sensor data, and navigation visualization*
 
 ## Features
 
 - **Full Gazebo Harmonic Simulation**: Physics-accurate simulation with Gazebo Harmonic (gz-sim)
 - **CHAMP Locomotion Controller**: Quadruped gait generation with inverse kinematics
+- **Dynamic Body Pose Control**: Real-time body orientation and height adjustment (6-DOF)
 - **Nav2 Integration**: Autonomous navigation with dynamic path planning
 - **SLAM Mapping**: Real-time map building with SLAM Toolbox
 - **Multiple Test Environments**: Pre-configured worlds for different scenarios
@@ -67,8 +74,8 @@ sudo apt install \
 ```bash
 # Clone the repository
 cd ~
-git clone <repository-url> unitree_go2_ros2_jazzy
-cd unitree_go2_ros2_jazzy
+git clone https://github.com/AOShei/go2-quadruped-sim.git
+cd go2-quadruped-sim
 
 # Build all packages
 colcon build
@@ -92,16 +99,206 @@ This will start:
 - Nav2 for autonomous navigation
 - RViz2 for visualization
 
-### Send Navigation Goals
+## Controlling the Robot
 
-In RViz2, use the "Nav2 Goal" button to set navigation waypoints. The robot will autonomously plan and execute paths to reach the goal.
+There are two main ways to control the Go2 robot in simulation:
 
-### Control the Robot Manually
+### Method 1: Autonomous Navigation with Nav2 (Recommended for Beginners)
+
+The easiest way to move the robot is using Nav2's goal-based navigation in RViz:
+
+1. **Launch the full simulation** (if not already running):
+   ```bash
+   source install/setup.bash
+   ros2 launch unitree_go2_nav2 simulation.launch.py
+   ```
+
+2. **Set a navigation goal in RViz2**:
+   - Click the **"Nav2 Goal"** button in the RViz toolbar (or press `G`)
+   - Click on the map where you want the robot to go
+   - Drag to set the desired orientation (direction the robot should face)
+   - Release to send the goal
+
+3. **Watch the robot navigate**:
+   - Nav2 will automatically plan a path (shown as a green line)
+   - The robot will avoid obstacles using the LiDAR sensor
+   - The local costmap (colored grid) shows detected obstacles
+   - SLAM Toolbox simultaneously builds the map as the robot explores
+
+**Tips**:
+- Start with nearby goals to see the robot in action
+- The robot moves at ~0.5 m/s maximum speed (tuned for stability)
+- If the robot gets stuck, set a new goal or wait for recovery behaviors
+- The map will gradually improve as the robot explores more area
+
+### Method 2: Manual Teleoperation
+
+For direct control, use keyboard teleoperation:
+
+1. **Install teleop_twist_keyboard** (if not already installed):
+   ```bash
+   sudo apt install ros-jazzy-teleop-twist-keyboard
+   ```
+
+2. **Launch teleoperation in a new terminal**:
+   ```bash
+   source install/setup.bash
+   ros2 run teleop_twist_keyboard teleop_twist_keyboard
+   ```
+
+3. **Control the robot with keyboard**:
+   - **`i`** - Move forward
+   - **`k`** - Stop
+   - **`,`** - Move backward
+   - **`j`** - Turn left
+   - **`l`** - Turn right
+   - **`u`** / **`o`** - Move diagonally
+   - **`q`** / **`z`** - Increase/decrease max speeds
+   - **`w`** / **`x`** - Increase/decrease only linear speed
+   - **`e`** / **`c`** - Increase/decrease only angular speed
+
+**Note**: Keep the teleop terminal focused (active window) for keyboard control to work.
+
+### Method 3: Programmatic Control (Advanced)
+
+Send velocity commands directly via topic:
 
 ```bash
-# Send velocity commands
-ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.2}, angular: {z: 0.3}}"
+# Move forward at 0.2 m/s
+ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.2, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}"
+
+# Turn in place (0.3 rad/s counterclockwise)
+ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0}, angular: {z: 0.3}}"
+
+# Stop the robot
+ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0}, angular: {z: 0.0}}"
 ```
+
+Or write your own Python/C++ node that publishes to `/cmd_vel` (type: `geometry_msgs/msg/Twist`).
+
+### Quick Reference: Control Topics
+
+| Topic | Message Type | Purpose | Example |
+|-------|--------------|---------|---------|
+| `/cmd_vel` | `geometry_msgs/Twist` | Velocity control (walking) | `"{linear: {x: 0.2}}"` |
+| `/body_pose` | `unitree_go2_msgs/Pose` | Body orientation/height | `"{z: 0.05, pitch: 0.1}"` |
+
+Both topics can be used simultaneously for advanced control scenarios.
+
+## Advanced Control: Body Pose Adjustment
+
+One of the powerful features of the CHAMP-based controller is **dynamic body pose control**. This allows you to adjust the robot's body orientation and height while standing or walking, which is essential for:
+- Navigating uneven terrain or slopes
+- Climbing stairs or ramps
+- Demonstrating the controller's stability capabilities
+- Research on legged locomotion and balance
+
+### Body Pose Commands
+
+The controller subscribes to `/body_pose` (type: `unitree_go2_msgs/msg/Pose`) with 6 degrees of freedom:
+
+**Translation (meters):**
+- `x` - Forward/backward body shift
+- `y` - Left/right body shift
+- `z` - Height adjustment (relative to nominal height)
+
+**Rotation (radians):**
+- `roll` - Tilt left/right
+- `pitch` - Tilt forward/backward
+- `yaw` - Rotate body (while feet stay planted)
+
+### Example Body Pose Commands
+
+```bash
+# Raise the body by 5cm (good for obstacles)
+ros2 topic pub /body_pose unitree_go2_msgs/msg/Pose "{z: 0.05}"
+
+# Lower the body by 3cm (more stable stance)
+ros2 topic pub /body_pose unitree_go2_msgs/msg/Pose "{z: -0.03}"
+
+# Tilt forward (pitch down, useful for climbing)
+ros2 topic pub /body_pose unitree_go2_msgs/msg/Pose "{pitch: 0.15}"
+
+# Tilt backward (pitch up)
+ros2 topic pub /body_pose unitree_go2_msgs/msg/Pose "{pitch: -0.15}"
+
+# Roll left (tilt sideways)
+ros2 topic pub /body_pose unitree_go2_msgs/msg/Pose "{roll: 0.2}"
+
+# Combine height and pitch (simulating climbing pose)
+ros2 topic pub /body_pose unitree_go2_msgs/msg/Pose "{z: -0.02, pitch: 0.2}"
+
+# Reset to neutral pose
+ros2 topic pub /body_pose unitree_go2_msgs/msg/Pose "{x: 0.0, y: 0.0, z: 0.0, roll: 0.0, pitch: 0.0, yaw: 0.0}"
+```
+
+### Body Pose While Walking
+
+**Important**: Body pose adjustments work in real-time and can be applied while the robot is moving! Try these:
+
+```bash
+# First, start the robot walking forward
+ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.2}}"
+
+# Then in another terminal, tilt the body forward while walking
+ros2 topic pub /body_pose unitree_go2_msgs/msg/Pose "{pitch: 0.1}"
+
+# Or adjust height while moving
+ros2 topic pub /body_pose unitree_go2_msgs/msg/Pose "{z: 0.03}"
+```
+
+### Demonstrating Stability
+
+To showcase the controller's stability and adaptability:
+
+1. **Static Stability Test**: Command different body orientations while standing
+   ```bash
+   # Try various roll/pitch angles to see the legs compensate
+   ros2 topic pub /body_pose unitree_go2_msgs/msg/Pose "{roll: 0.15, pitch: 0.1}"
+   ```
+
+2. **Dynamic Stability Test**: Walk with adjusted body pose
+   ```bash
+   # Walk forward with lowered stance
+   ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.15}}" &
+   ros2 topic pub /body_pose unitree_go2_msgs/msg/Pose "{z: -0.05}"
+   ```
+
+3. **Terrain Adaptation Simulation**: Add world with ramps/stairs and adjust pitch
+   ```bash
+   # When approaching an incline, pitch forward
+   ros2 topic pub /body_pose unitree_go2_msgs/msg/Pose "{pitch: 0.15, z: -0.02}"
+   ```
+
+### Practical Limits
+
+For stable operation, stay within these ranges:
+- **Height (z)**: ±0.08m from nominal (default 0.225m)
+- **Pitch/Roll**: ±0.3 radians (~±17 degrees)
+- **X/Y Translation**: ±0.05m
+
+Exceeding these limits may cause inverse kinematics failures or instability.
+
+### Automated Body Pose Demo
+
+Want to see all the body pose capabilities in action? Run the automated demo script:
+
+```bash
+# Make sure the simulation is running first
+ros2 launch unitree_go2_nav2 simulation.launch.py
+
+# In a new terminal, run the demo
+source install/setup.bash
+ros2 run unitree_go2_nav2 body_pose_demo
+```
+
+The demo will automatically cycle through various poses including:
+- Height adjustments (raising and lowering)
+- Forward and backward pitch (climbing poses)
+- Left and right roll (sideways tilt)
+- Combined movements
+
+Watch the robot in Gazebo or RViz as it demonstrates its stability and range of motion!
 
 ## Package Overview
 
@@ -133,19 +330,6 @@ Custom message definitions.
 - `Velocities`: 3-DOF velocity commands
 
 ## Usage Examples
-
-### Launch with Different Worlds
-
-```bash
-# Playground environment
-ros2 launch unitree_go2_nav2 simulation.launch.py world:=playground
-
-# Outdoor terrain
-ros2 launch unitree_go2_nav2 simulation.launch.py world:=outdoor
-
-# Default simple world
-ros2 launch unitree_go2_nav2 simulation.launch.py world:=default
-```
 
 ### Launch Without RViz
 
@@ -283,11 +467,11 @@ See [CREDITS.md](CREDITS.md) for complete attribution information.
 If you use this simulation in your research, please cite:
 
 ```bibtex
-@software{unitree_go2_ros2,
+@software{go2_quadruped_sim,
   author = {O'Shei, Andrew},
-  title = {Unitree Go2 ROS 2 Jazzy Simulation},
+  title = {go2-quadruped-sim: Unitree Go2 ROS 2 Simulation},
   year = {2024-2025},
-  url = {<repository-url>}
+  url = {https://github.com/AOShei/go2-quadruped-sim}
 }
 ```
 
