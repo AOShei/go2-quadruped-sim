@@ -475,11 +475,6 @@ If you use this simulation in your research, please cite:
 }
 ```
 
-## Contact
-
-**Maintainer**: Andrew O'Shei  
-**Email**: andrewoshei@gmail.com
-
 ## Acknowledgments
 
 Special thanks to:

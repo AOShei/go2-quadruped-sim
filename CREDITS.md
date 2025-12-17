@@ -54,9 +54,8 @@ This project builds upon and incorporates work from several open-source projects
 ## Project Maintainer
 
 **Name**: Andrew O'Shei
-**Email**: andrewoshei@gmail.com
 **License**: BSD-3-Clause
-**Year**: 2024-2025
+**Year**: 2025
 
 **Original contributions**:
 - ROS 2 Jazzy integration and wrapper code
@@ -92,4 +91,4 @@ Special thanks to:
 
 ---
 
-For questions about licensing or attribution, please contact andrewoshei@gmail.com or open an issue on the project repository.
+For questions about licensing or attribution, please open an issue on the project repository.
