@@ -1,0 +1,368 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <!-- =========================================== -->
+    <!-- SENSORS SYSTEM (Required for all sensors)   -->
+    <!-- Must be loaded first for LiDAR/IMU to work  -->
+    <!-- =========================================== -->
+    
+    <gazebo>
+        <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+            <render_engine>ogre2</render_engine>
+        </plugin>
+    </gazebo>
+
+    <!-- =========================================== -->
+    <!-- JOINT STATE PUBLISHER (Gazebo Harmonic)     -->
+    <!-- =========================================== -->
+    
+    <gazebo>
+        <plugin filename="gz-sim-joint-state-publisher-system" 
+                name="gz::sim::systems::JointStatePublisher">
+            <!-- Front Left leg -->
+            <joint_name>FL_hip_joint</joint_name>
+            <joint_name>FL_thigh_joint</joint_name>
+            <joint_name>FL_calf_joint</joint_name>
+            <!-- Front Right leg -->
+            <joint_name>FR_hip_joint</joint_name>
+            <joint_name>FR_thigh_joint</joint_name>
+            <joint_name>FR_calf_joint</joint_name>
+            <!-- Rear Left leg -->
+            <joint_name>RL_hip_joint</joint_name>
+            <joint_name>RL_thigh_joint</joint_name>
+            <joint_name>RL_calf_joint</joint_name>
+            <!-- Rear Right leg -->
+            <joint_name>RR_hip_joint</joint_name>
+            <joint_name>RR_thigh_joint</joint_name>
+            <joint_name>RR_calf_joint</joint_name>
+            <topic>joint_states</topic>
+            <update_rate>100</update_rate>
+        </plugin>
+    </gazebo>
+
+    <!-- =========================================== -->
+    <!-- JOINT POSITION CONTROLLER (Gazebo Harmonic) -->
+    <!-- With PID gains to hold standing pose        -->
+    <!-- =========================================== -->
+
+    <gazebo>
+      <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+        <parameters>$(find unitree_go2_description)/config/ros_control.yaml</parameters>
+      </plugin>
+    </gazebo>
+
+    <!-- =========================================== -->
+    <!-- ODOMETRY PUBLISHER (Gazebo Harmonic)        -->
+    <!-- For legged robot odometry estimation        -->
+    <!-- =========================================== -->
+    
+    <gazebo>
+        <plugin filename="gz-sim-odometry-publisher-system" 
+                name="gz::sim::systems::OdometryPublisher">
+            <odom_frame>odom</odom_frame>
+            <robot_base_frame>base_link</robot_base_frame>
+            <odom_publish_frequency>50</odom_publish_frequency>
+            <odom_topic>/odom</odom_topic>
+            <tf_topic>/tf</tf_topic>
+            <!-- 3D odometry for legged robot -->
+            <dimensions>3</dimensions>
+        </plugin>
+    </gazebo>
+
+    <!-- =========================================== -->
+    <!-- IMU SENSOR - Gazebo Harmonic Format         -->
+    <!-- =========================================== -->
+    
+    <gazebo reference="imu_link">
+        <gravity>true</gravity>
+        
+        <sensor name="imu_sensor" type="imu">
+            <always_on>true</always_on>
+            <update_rate>100</update_rate>
+            <visualize>false</visualize>
+            <topic>imu/data</topic>
+            
+            <imu>
+                <angular_velocity>
+                    <x>
+                        <noise type="gaussian">
+                            <mean>0.0</mean>
+                            <stddev>2e-4</stddev>
+                        </noise>
+                    </x>
+                    <y>
+                        <noise type="gaussian">
+                            <mean>0.0</mean>
+                            <stddev>2e-4</stddev>
+                        </noise>
+                    </y>
+                    <z>
+                        <noise type="gaussian">
+                            <mean>0.0</mean>
+                            <stddev>2e-4</stddev>
+                        </noise>
+                    </z>
+                </angular_velocity>
+                <linear_acceleration>
+                    <x>
+                        <noise type="gaussian">
+                            <mean>0.0</mean>
+                            <stddev>1.7e-2</stddev>
+                        </noise>
+                    </x>
+                    <y>
+                        <noise type="gaussian">
+                            <mean>0.0</mean>
+                            <stddev>1.7e-2</stddev>
+                        </noise>
+                    </y>
+                    <z>
+                        <noise type="gaussian">
+                            <mean>0.0</mean>
+                            <stddev>1.7e-2</stddev>
+                        </noise>
+                    </z>
+                </linear_acceleration>
+            </imu>
+        </sensor>
+    </gazebo>
+
+    <!-- =========================================== -->
+    <!-- FRONT CAMERA SENSOR (Gazebo Harmonic)       -->
+    <!-- =========================================== -->
+    
+    <gazebo reference="front_camera_link">
+        <sensor name="front_camera" type="camera">
+            <always_on>true</always_on>
+            <update_rate>30</update_rate>
+            <visualize>false</visualize>
+            <topic>front_camera/image_raw</topic>
+            
+            <camera name="front_camera">
+                <horizontal_fov>1.5708</horizontal_fov>
+                <image>
+                    <width>640</width>
+                    <height>480</height>
+                    <format>R8G8B8</format>
+                </image>
+                <clip>
+                    <near>0.05</near>
+                    <far>100</far>
+                </clip>
+                <noise>
+                    <type>gaussian</type>
+                    <mean>0.0</mean>
+                    <stddev>0.007</stddev>
+                </noise>
+            </camera>
+        </sensor>
+    </gazebo>
+
+    <!-- =========================================== -->
+    <!-- FOOT CONTACT SENSORS (Gazebo Harmonic)      -->
+    <!-- =========================================== -->
+    
+    <gazebo reference="FL_foot">
+        <sensor name="FL_foot_contact" type="contact">
+            <always_on>true</always_on>
+            <update_rate>100</update_rate>
+            <contact>
+                <collision>FL_foot_collision</collision>
+            </contact>
+            <topic>FL_foot_contact</topic>
+        </sensor>
+    </gazebo>
+
+    <gazebo reference="FR_foot">
+        <sensor name="FR_foot_contact" type="contact">
+            <always_on>true</always_on>
+            <update_rate>100</update_rate>
+            <contact>
+                <collision>FR_foot_collision</collision>
+            </contact>
+            <topic>FR_foot_contact</topic>
+        </sensor>
+    </gazebo>
+
+    <gazebo reference="RL_foot">
+        <sensor name="RL_foot_contact" type="contact">
+            <always_on>true</always_on>
+            <update_rate>100</update_rate>
+            <contact>
+                <collision>RL_foot_collision</collision>
+            </contact>
+            <topic>RL_foot_contact</topic>
+        </sensor>
+    </gazebo>
+
+    <gazebo reference="RR_foot">
+        <sensor name="RR_foot_contact" type="contact">
+            <always_on>true</always_on>
+            <update_rate>100</update_rate>
+            <contact>
+                <collision>RR_foot_collision</collision>
+            </contact>
+            <topic>RR_foot_contact</topic>
+        </sensor>
+    </gazebo>
+
+    <!-- =========================================== -->
+    <!-- GAZEBO MATERIALS AND PHYSICS                -->
+    <!-- =========================================== -->
+
+    <gazebo reference="base_link">
+        <self_collide>false</self_collide>
+    </gazebo>
+
+    <gazebo reference="trunk">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <kp>1000000.0</kp>
+        <kd>1.0</kd>
+        <self_collide>false</self_collide>
+        <material>
+            <ambient>0.5 0.5 0.5 1</ambient>
+            <diffuse>0.5 0.5 0.5 1</diffuse>
+        </material>
+    </gazebo>
+
+    <gazebo reference="imu_link">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <material>
+            <ambient>1.0 0.5 0.0 1</ambient>
+            <diffuse>1.0 0.5 0.0 1</diffuse>
+        </material>
+    </gazebo>
+
+    <gazebo reference="front_camera_link">
+        <material>
+            <ambient>0.3 0.3 0.3 1</ambient>
+            <diffuse>0.3 0.3 0.3 1</diffuse>
+        </material>
+    </gazebo>
+
+    <gazebo reference="radar_link">
+        <material>
+            <ambient>0.1 0.1 0.1 1</ambient>
+            <diffuse>0.1 0.1 0.1 1</diffuse>
+        </material>
+    </gazebo>
+
+    <!-- FL leg -->
+    <gazebo reference="FL_hip">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>false</self_collide>
+    </gazebo>
+    
+    <gazebo reference="FL_thigh">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>true</self_collide>
+        <kp>1000000.0</kp>
+        <kd>1.0</kd>
+    </gazebo>
+    
+    <gazebo reference="FL_calf">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>true</self_collide>
+    </gazebo>
+    
+    <gazebo reference="FL_foot">
+        <mu1>0.8</mu1>
+        <mu2>0.8</mu2>
+        <self_collide>true</self_collide>
+        <kp>1000000.0</kp>
+        <kd>1.0</kd>
+    </gazebo>
+
+    <!-- FR leg -->
+    <gazebo reference="FR_hip">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>false</self_collide>
+    </gazebo>
+    
+    <gazebo reference="FR_thigh">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>true</self_collide>
+        <kp>1000000.0</kp>
+        <kd>1.0</kd>
+    </gazebo>
+    
+    <gazebo reference="FR_calf">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>true</self_collide>
+    </gazebo>
+    
+    <gazebo reference="FR_foot">
+        <mu1>0.8</mu1>
+        <mu2>0.8</mu2>
+        <self_collide>true</self_collide>
+        <kp>1000000.0</kp>
+        <kd>1.0</kd>
+    </gazebo>
+
+    <!-- RL leg -->
+    <gazebo reference="RL_hip">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>false</self_collide>
+    </gazebo>
+    
+    <gazebo reference="RL_thigh">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>true</self_collide>
+        <kp>1000000.0</kp>
+        <kd>1.0</kd>
+    </gazebo>
+    
+    <gazebo reference="RL_calf">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>true</self_collide>
+    </gazebo>
+    
+    <gazebo reference="RL_foot">
+        <mu1>0.8</mu1>
+        <mu2>0.8</mu2>
+        <self_collide>true</self_collide>
+        <kp>1000000.0</kp>
+        <kd>1.0</kd>
+    </gazebo>
+
+    <!-- RR leg -->
+    <gazebo reference="RR_hip">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>false</self_collide>
+    </gazebo>
+    
+    <gazebo reference="RR_thigh">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>true</self_collide>
+        <kp>1000000.0</kp>
+        <kd>1.0</kd>
+    </gazebo>
+    
+    <gazebo reference="RR_calf">
+        <mu1>0.2</mu1>
+        <mu2>0.2</mu2>
+        <self_collide>true</self_collide>
+    </gazebo>
+    
+    <gazebo reference="RR_foot">
+        <mu1>0.8</mu1>
+        <mu2>0.8</mu2>
+        <self_collide>true</self_collide>
+        <kp>1000000.0</kp>
+        <kd>1.0</kd>
+    </gazebo>
+
+</robot>

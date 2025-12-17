@@ -1,0 +1,56 @@
+# --- ROS 2 Standard Build/Install/Log Directories ---
+build/
+install/
+log/
+# Ignore local colcon defaults if present
+COLCON_IGNORE
+
+CLAUDE.md
+
+# --- C++ & CMake Artifacts ---
+# Object files and libraries
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+
+# CMake generation artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+catkin_generated/
+gtest/
+
+# Compile commands (often generated for IDE intellisense)
+compile_commands.json
+
+# --- Python (for Launch files/scripts) ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- IDEs & Editors (Optional but recommended) ---
+# VS Code
+.vscode/
+*.code-workspace
+
+# CLion / IntelliJ
+.idea/
+cmake-build-*/
+
+# Vim / Emacs
+*~
+*.swp
+*.swo
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db
+
+# --- Gazebo Simulation Logs ---
+# Sometimes generated locally if not redirected
+.gazebo/
