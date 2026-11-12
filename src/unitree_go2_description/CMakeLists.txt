@@ -14,7 +14,6 @@ find_package(xacro REQUIRED)
 install(
   DIRECTORY
     launch
-    urdf
     xacro
     config
     meshes
